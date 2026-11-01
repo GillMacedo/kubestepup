@@ -1,0 +1,45 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "widgets.example.com"
+   },
+   "spec": {
+    "versions": [
+     {
+      "name": "v1",
+      "served": true
+     },
+     {
+      "name": "v1alpha1",
+      "served": false
+     }
+    ]
+   },
+   "status": {
+    "storedVersions": [
+     "v1alpha1",
+     "v1"
+    ]
+   }
+  },
+  {
+   "metadata": {
+    "name": "fine.example.com"
+   },
+   "spec": {
+    "versions": [
+     {
+      "name": "v1",
+      "served": true
+     }
+    ]
+   },
+   "status": {
+    "storedVersions": [
+     "v1"
+    ]
+   }
+  }
+ ]
+}

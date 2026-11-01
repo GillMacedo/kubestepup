@@ -1,0 +1,14 @@
+{
+  "name": "kubestepup-marketplace",
+  "description": "Marketplace for kubestepup, which plans Kubernetes upgrades and finds blockers.",
+  "owner": {
+    "name": "Giulliano Macedo"
+  },
+  "plugins": [
+    {
+      "name": "kubestepup",
+      "source": "./plugin",
+      "description": "Plan a Kubernetes upgrade one minor version at a time and find what would block it. Read-only."
+    }
+  ]
+}

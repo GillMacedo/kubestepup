@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""Stands in for kubectl in tests and the demo: serves made-up objects from tests/fixtures."""
+import json, os, sys
+from pathlib import Path
+
+args = sys.argv[1:]
+if os.environ.get("FAKE_LOG"):
+    with open(os.environ["FAKE_LOG"], "a") as log:
+        log.write("kubectl " + " ".join(args) + "\n")
+if args and args[0] == "--context":
+    args = args[2:]
+fixtures = Path(__file__).resolve().parent.parent / "fixtures"
+if args[:2] == ["config", "current-context"]:
+    print("demo-cluster")
+elif args[0] == "version":
+    print(os.environ.get("FAKE_VERSION") or (fixtures / "version.json").read_text())
+elif args[:2] == ["get", "--raw"]:
+    if "metrics" in os.environ.get("FAKE_DENY", "").split(","):
+        sys.stderr.write("Error from server (Forbidden)\n")
+        sys.exit(1)
+    print((fixtures / "metrics.txt").read_text())
+else:
+    resource = args[1].split(".")[0]
+    if resource in os.environ.get("FAKE_DENY", "").split(","):
+        sys.stderr.write(f"Error from server (Forbidden): {resource} is forbidden\n")
+        sys.exit(1)
+    empty = os.environ.get("FAKE_EMPTY") == "1"
+    path = fixtures / f"{resource}.json"
+    print(path.read_text() if path.exists() and not empty else json.dumps({"items": []}))

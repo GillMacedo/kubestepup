@@ -1,0 +1,31 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "checkout",
+    "namespace": "shop"
+   },
+   "spec": {
+    "replicas": 1
+   }
+  },
+  {
+   "metadata": {
+    "name": "search",
+    "namespace": "shop"
+   },
+   "spec": {
+    "replicas": 3
+   }
+  },
+  {
+   "metadata": {
+    "name": "coredns",
+    "namespace": "kube-system"
+   },
+   "spec": {
+    "replicas": 1
+   }
+  }
+ ]
+}

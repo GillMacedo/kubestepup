@@ -1,0 +1,13 @@
+{
+  "name": "kubestepup",
+  "version": "0.1.0",
+  "description": "Plan a Kubernetes upgrade one minor version at a time and find blockers: removed APIs in use, kubelet skew, drain-blocking PodDisruptionBudgets and broken webhooks. Read-only.",
+  "author": {
+    "name": "Giulliano Macedo",
+    "url": "https://github.com/GillMacedo"
+  },
+  "homepage": "https://github.com/GillMacedo/kubestepup",
+  "repository": "https://github.com/GillMacedo/kubestepup",
+  "license": "MIT",
+  "keywords": ["kubernetes", "k8s", "upgrade", "deprecated-apis", "version-skew", "sre", "devops"]
+}

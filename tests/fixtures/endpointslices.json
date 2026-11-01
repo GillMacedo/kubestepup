@@ -1,0 +1,34 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "namespace": "ok",
+    "labels": {
+     "kubernetes.io/service-name": "healthy"
+    }
+   },
+   "endpoints": [
+    {
+     "conditions": {
+      "ready": true
+     }
+    }
+   ]
+  },
+  {
+   "metadata": {
+    "namespace": "ok",
+    "labels": {
+     "kubernetes.io/service-name": "notready"
+    }
+   },
+   "endpoints": [
+    {
+     "conditions": {
+      "ready": false
+     }
+    }
+   ]
+  }
+ ]
+}

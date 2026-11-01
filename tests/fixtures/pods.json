@@ -1,0 +1,30 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "debug",
+    "namespace": "shop"
+   }
+  },
+  {
+   "metadata": {
+    "name": "owned",
+    "namespace": "shop",
+    "ownerReferences": [
+     {
+      "kind": "ReplicaSet"
+     }
+    ]
+   }
+  },
+  {
+   "metadata": {
+    "name": "mirror",
+    "namespace": "kube-system",
+    "annotations": {
+     "kubernetes.io/config.mirror": "x"
+    }
+   }
+  }
+ ]
+}

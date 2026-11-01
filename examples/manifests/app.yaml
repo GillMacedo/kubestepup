@@ -1,0 +1,15 @@
+# Made-up manifests for the demo.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: demo
+---
+apiVersion: flowcontrol.apiserver.k8s.io/v1beta3
+kind: FlowSchema
+metadata:
+  name: demo-flow
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: demo-report

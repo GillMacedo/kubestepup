@@ -1,0 +1,51 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "policy"
+   },
+   "webhooks": [
+    {
+     "name": "gone.example.com",
+     "failurePolicy": "Fail",
+     "clientConfig": {
+      "service": {
+       "namespace": "ok",
+       "name": "missing"
+      }
+     }
+    },
+    {
+     "name": "soft.example.com",
+     "failurePolicy": "Ignore",
+     "clientConfig": {
+      "service": {
+       "namespace": "ok",
+       "name": "missing"
+      }
+     }
+    },
+    {
+     "name": "good.example.com",
+     "failurePolicy": "Fail",
+     "clientConfig": {
+      "service": {
+       "namespace": "ok",
+       "name": "healthy"
+      }
+     }
+    },
+    {
+     "name": "down.example.com",
+     "failurePolicy": "Fail",
+     "clientConfig": {
+      "service": {
+       "namespace": "ok",
+       "name": "notready"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

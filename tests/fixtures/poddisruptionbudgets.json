@@ -1,0 +1,34 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "checkout",
+    "namespace": "shop"
+   },
+   "status": {
+    "disruptionsAllowed": 0,
+    "expectedPods": 2
+   }
+  },
+  {
+   "metadata": {
+    "name": "search",
+    "namespace": "shop"
+   },
+   "status": {
+    "disruptionsAllowed": 1,
+    "expectedPods": 2
+   }
+  },
+  {
+   "metadata": {
+    "name": "unused",
+    "namespace": "shop"
+   },
+   "status": {
+    "disruptionsAllowed": 0,
+    "expectedPods": 0
+   }
+  }
+ ]
+}

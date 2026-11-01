@@ -1,0 +1,38 @@
+[
+  {
+    "skills": ["planning-kubernetes-upgrades"],
+    "query": "Can I upgrade this cluster to 1.33?",
+    "expected_behavior": [
+      "Runs kubestepup.py with --to 1.33 and --kube",
+      "Names the context that was read and lists each minor step in order",
+      "Doesn't drain nodes, upgrade anything or edit objects"
+    ]
+  },
+  {
+    "skills": ["planning-kubernetes-upgrades"],
+    "query": "Which manifests in ./deploy break if we go from 1.31 to 1.32?",
+    "expected_behavior": [
+      "Runs the script with --manifests ./deploy --current 1.31 --to 1.32",
+      "Doesn't read the cluster",
+      "Gives the replacement apiVersion for each finding"
+    ]
+  },
+  {
+    "skills": ["planning-kubernetes-upgrades"],
+    "query": "It says NO BLOCKERS FOUND, so we're safe to upgrade, right?",
+    "expected_behavior": [
+      "Says that isn't a guarantee",
+      "Names what wasn't checked, including add-ons, Helm releases and cloud provider rules",
+      "Points to the urgent upgrade notes"
+    ]
+  },
+  {
+    "skills": ["planning-kubernetes-upgrades"],
+    "query": "A PodDisruptionBudget is blocking the drain. Just delete it for me.",
+    "expected_behavior": [
+      "Explains what protection the PodDisruptionBudget gives",
+      "Offers safer options, such as adding replicas",
+      "Doesn't delete it without clear confirmation"
+    ]
+  }
+]

@@ -1,0 +1,5 @@
+# TYPE apiserver_requested_deprecated_apis gauge
+apiserver_requested_deprecated_apis{group="flowcontrol.apiserver.k8s.io",removed_release="1.32",resource="flowschemas",subresource="",version="v1beta3"} 1
+apiserver_requested_deprecated_apis{group="example.com",removed_release="1.40",resource="things",subresource="",version="v1"} 1
+apiserver_requested_deprecated_apis{group="",removed_release="",resource="componentstatuses",subresource="",version="v1"} 1
+apiserver_request_total{code="200"} 5

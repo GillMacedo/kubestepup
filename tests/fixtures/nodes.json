@@ -1,0 +1,52 @@
+{
+ "items": [
+  {
+   "metadata": {
+    "name": "node-a"
+   },
+   "status": {
+    "nodeInfo": {
+     "kubeletVersion": "v1.31.4"
+    },
+    "conditions": [
+     {
+      "type": "Ready",
+      "status": "True"
+     }
+    ]
+   }
+  },
+  {
+   "metadata": {
+    "name": "node-b"
+   },
+   "status": {
+    "nodeInfo": {
+     "kubeletVersion": "v1.29.9"
+    },
+    "conditions": [
+     {
+      "type": "Ready",
+      "status": "True"
+     }
+    ]
+   }
+  },
+  {
+   "metadata": {
+    "name": "node-c"
+   },
+   "status": {
+    "nodeInfo": {
+     "kubeletVersion": "v1.31.4"
+    },
+    "conditions": [
+     {
+      "type": "Ready",
+      "status": "False"
+     }
+    ]
+   }
+  }
+ ]
+}
