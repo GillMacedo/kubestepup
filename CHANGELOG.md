@@ -4,6 +4,8 @@ All notable changes are documented here, in [Keep a Changelog](https://keepachan
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-01
+
 ### Fixed
 - Include `.yaml.tpl` files when scanning manifest directories; cover Windows line endings in multi-document manifests.
 

@@ -1,6 +1,6 @@
 {
   "name": "kubestepup",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Plan a Kubernetes upgrade one minor version at a time and find blockers: removed APIs in use, kubelet skew, drain-blocking PodDisruptionBudgets and broken webhooks. Read-only.",
   "author": {
     "name": "Giulliano Macedo",
