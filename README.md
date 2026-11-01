@@ -63,7 +63,7 @@ On made-up data, through the stand-in `kubectl` in `tests/fakes`:
       3 PodDisruptionBudgets.
       1 webhook configurations.
       2 CustomResourceDefinitions. Whether their controllers support the target version isn't checked.
-      3 pods and their owners.
+      3 pods, their owners and emptyDir volumes.
       1 manifest files, matching top-level apiVersion and kind. Rendered Helm charts are more reliable than templates.
 
     Not checked: add-on and controller compatibility, cloud provider rules, and behavior changes outside API removals. Removal table checked 2026-11-01 against https://kubernetes.io/docs/reference/using-api/deprecation-guide/
@@ -83,6 +83,7 @@ Add `--format markdown` for a checklist, or `--format json` to process the resul
 | `webhook-no-backend` | Blocker | Fail-closed webhooks whose service has no ready endpoint |
 | `crd-stored-version` | Warning | Stored CRD versions that are no longer served |
 | `single-replica` | Warning | Deployments with one replica, outside `kube-system` |
+| `emptydir-data-loss` | Warning | Pods using `emptyDir`; review [local data loss before draining](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/) |
 | `unowned-pod` | Warning | Pods with no controller, which `kubectl drain` refuses without `--force` |
 | `kubectl-skew` | Warning | A `kubectl` more than one minor from a step |
 

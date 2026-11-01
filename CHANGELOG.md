@@ -4,6 +4,9 @@ All notable changes are documented here, in [Keep a Changelog](https://keepachan
 
 ## [Unreleased]
 
+### Added
+- Warn about data loss from pods using `emptyDir` volumes before draining nodes.
+
 ## [0.1.1] - 2026-11-01
 
 ### Fixed

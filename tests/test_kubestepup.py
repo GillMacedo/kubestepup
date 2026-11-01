@@ -94,6 +94,35 @@ class ClusterTest(unittest.TestCase):
         self.assertNotIn("search", summary)
         self.assertNotIn("unused", summary)
 
+    def test_emptydir_warning_includes_disk_and_memory_but_not_persistent_volumes(self):
+        pods = [
+            {"metadata": {"namespace": "shop", "name": "disk"}, "spec": {"volumes": [{"emptyDir": {}}]}},
+            {"metadata": {"namespace": "shop", "name": "memory"}, "spec": {"volumes": [{"emptyDir": {"medium": "Memory"}}]}},
+            {"metadata": {"namespace": "shop", "name": "persistent"}, "spec": {"volumes": [{"persistentVolumeClaim": {"claimName": "data"}}]}},
+            {"metadata": {"namespace": "shop", "name": "no-volume"}},
+        ]
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertEqual(finding.severity, "WARNING")
+        self.assertIn("shop/disk", finding.summary)
+        self.assertIn("shop/memory", finding.summary)
+        self.assertNotIn("shop/persistent", finding.summary)
+        self.assertNotIn("shop/no-volume", finding.summary)
+        self.assertIn("--delete-emptydir-data", finding.summary)
+        self.assertIn("lost", finding.summary)
+
+    def test_unreadable_pods_do_not_claim_emptydir_coverage(self):
+        report = ks.Report()
+        cluster = ks.Cluster(None, report)
+        with mock.patch.object(cluster, "json", side_effect=[{"items": []}, ks.ReadError("forbidden")]):
+            ks.check_workloads(cluster, report)
+        self.assertEqual(report.failures, ["pods: forbidden"])
+        self.assertEqual(report.coverage, [])
+        self.assertEqual(report.findings, [])
+
     def test_webhook_fail_closed_without_ready_backend(self):
         _, report = report_for("--kube", "--to", "1.32")
         summary = checks(report)["webhook-no-backend"]["summary"]
