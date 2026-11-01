@@ -200,6 +200,30 @@ class ManifestTest(unittest.TestCase):
             _, report = report_for("--current", "1.31", "--to", "1.32", "--manifests", temp)
         self.assertEqual(report["findings"], [])
 
+    def test_windows_line_endings_in_multiple_documents(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp, "windows.yaml")
+            path.write_bytes(b"apiVersion: batch/v1beta1\r\nkind: CronJob\r\n---\r\n"
+                             b"apiVersion: flowcontrol.apiserver.k8s.io/v1beta3\r\nkind: FlowSchema\r\n")
+            code, report = report_for("--current", "1.31", "--to", "1.32", "--manifests", str(path))
+        self.assertEqual(code, ks.EXIT_ATTENTION)
+        self.assertEqual(len(report["findings"]), 2)
+        summaries = " ".join(finding["summary"] for finding in report["findings"])
+        self.assertIn("CronJob uses batch/v1beta1", summaries)
+        self.assertIn("FlowSchema uses flowcontrol.apiserver.k8s.io/v1beta3", summaries)
+        self.assertEqual(report["failures"], [])
+
+    def test_directory_discovers_yaml_templates(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp, "cronjob.yaml.tpl")
+            path.write_text("apiVersion: batch/v1beta1\nkind: CronJob\nmetadata:\n  name: {{ .Values.name }}\n")
+            Path(temp, "ignored.tpl").write_text(path.read_text())
+            self.assertEqual(list(ks.manifest_files([temp])), [path])
+            code, report = report_for("--current", "1.31", "--to", "1.32", "--manifests", temp)
+        self.assertEqual(code, ks.EXIT_ATTENTION)
+        self.assertEqual(len(report["findings"]), 1)
+        self.assertIn("CronJob uses batch/v1beta1", report["findings"][0]["summary"])
+
     def test_missing_path_is_reported(self):
         code, report = report_for("--current", "1.31", "--to", "1.32", "--manifests", "/no/such/place")
         self.assertEqual(code, ks.EXIT_ATTENTION)

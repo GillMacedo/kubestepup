@@ -20,7 +20,7 @@ KUBECTL_MAX_SKEW = 1  # version skew policy
 CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]+")
 METRIC = re.compile(r"^apiserver_requested_deprecated_apis\{(?P<labels>[^}]*)\}\s+\S+")
 LABEL = re.compile(r'(\w+)="([^"]*)"')
-MANIFEST_SUFFIXES = {".yaml", ".yml", ".json"}
+MANIFEST_SUFFIXES = (".yaml", ".yml", ".json", ".yaml.tpl")
 SKIP_DIRS = {".git", "node_modules", "vendor"}
 TABLE_CHECKED = "2026-11-01"
 GUIDE = "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
@@ -217,7 +217,7 @@ def manifest_files(paths):
         if not root.is_dir():
             raise ReadError(f"{path} doesn't exist")
         for file in sorted(root.rglob("*")):
-            if file.is_file() and file.suffix in MANIFEST_SUFFIXES and not SKIP_DIRS.intersection(file.parts):
+            if file.is_file() and file.name.endswith(MANIFEST_SUFFIXES) and not SKIP_DIRS.intersection(file.parts):
                 yield file
 
 
