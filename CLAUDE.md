@@ -22,4 +22,4 @@ Claude Code skill and CLI that plans a Kubernetes minor version upgrade and find
 - Don't say an upgrade is safe.
 
 ## Definition of done
-`make test` and `make lint` pass, and `CHANGELOG.md`, `ROADMAP.md` and docs are updated when relevant.
+`make test` and `make lint` pass, and `ROADMAP.md` and docs are updated when relevant.

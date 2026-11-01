@@ -10,11 +10,11 @@ Thanks for helping. Fork the repo, make your change on a branch, and open a pull
 You need Python 3.10 or newer. `make lint` also needs Claude Code. The dev container in `.devcontainer/` sets up both.
 
 ## Pull requests
-- PRs go through an automatic check before a person reads them: changes over 30 lines need a linked open issue (`Closes #<number>`), code changes need tests and a `CHANGELOG.md` line, `make test` must pass, and a PR can have at most 800 changed lines.
+- PRs go through an automatic check before a person reads them: changes over 30 lines need a linked open issue (`Closes #<number>`), code changes need tests, `make test` must pass, and a PR can have at most 800 changed lines.
 - Keep each one to a single change, with tests.
 - New checks must be read-only, and must report when they can't read something.
-- Update `CHANGELOG.md`, `ROADMAP.md` and docs when relevant.
-- Releases are automatic: a merge that changes what users install becomes a new version once its `CHANGELOG.md` lines are in. Docs and CI changes wait for the next one.
+- Update `ROADMAP.md` and docs when relevant.
+- Releases are automatic: a merge that changes what users install becomes a new version with its changelog line taken from the PR title, so write a title that says what changed for users. Edit `CHANGELOG.md` yourself only if you want different wording. Docs and CI changes wait for the next one.
 
 ## Working with AI agents
 Agents are welcome. `CLAUDE.md` and `AGENTS.md` have the project's instructions, and `.claude/commands/` has common tasks. Say in your PR that an agent helped, and review the result yourself before submitting. You're responsible for what you submit.
