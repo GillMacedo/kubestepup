@@ -358,7 +358,13 @@ def check_workloads(cluster, report):
     pods = cluster.items("pods")
     if pods is not None:
         report.coverage.append(f"{len(pods)} pods, their owners and emptyDir volumes.")
-        local_data = [ref(item) for item in pods if any("emptyDir" in volume for volume in item.get("spec", {}).get("volumes", []))]
+        local_data = [
+            ref(item) for item in pods
+            if "kubernetes.io/config.mirror" not in item["metadata"].get("annotations", {})
+            and not any(owner.get("kind") == "DaemonSet" and owner.get("controller")
+                        for owner in item["metadata"].get("ownerReferences") or [])
+            and any("emptyDir" in volume for volume in item.get("spec", {}).get("volumes") or [])
+        ]
         if local_data:
             report.findings.append(Finding("WARNING", "emptydir-data-loss", f"Pods using emptyDir: {named(local_data)}. Their data is lost when the pod is removed. Review that data before allowing drain to delete it with --delete-emptydir-data."))
         unowned = [ref(item) for item in pods if not item["metadata"].get("ownerReferences") and "kubernetes.io/config.mirror" not in item["metadata"].get("annotations", {})]

@@ -5,7 +5,7 @@ All notable changes are documented here, in [Keep a Changelog](https://keepachan
 ## [Unreleased]
 
 ### Added
-- Warn about data loss from pods using `emptyDir` volumes before draining nodes.
+- Warn about data loss from drainable pods using `emptyDir` volumes, excluding DaemonSet-managed and mirror pods.
 
 ## [0.1.1] - 2026-11-01
 

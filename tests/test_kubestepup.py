@@ -114,6 +114,51 @@ class ClusterTest(unittest.TestCase):
         self.assertIn("--delete-emptydir-data", finding.summary)
         self.assertIn("lost", finding.summary)
 
+    def test_emptydir_warning_excludes_pods_drain_does_not_delete(self):
+        pods = [
+            {"metadata": {"namespace": "logging", "name": f"fluent-bit-{i}",
+                          "ownerReferences": [{"kind": "DaemonSet", "controller": True}]},
+             "spec": {"volumes": [{"emptyDir": {}}]}}
+            for i in range(20)
+        ]
+        pods.append({"metadata": {"namespace": "kube-system", "name": "etcd-n1",
+                                  "annotations": {"kubernetes.io/config.mirror": "hash"}},
+                     "spec": {"volumes": [{"emptyDir": {}}]}})
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+
+        pods.append({"metadata": {"namespace": "shop", "name": "zz-cache",
+                                  "ownerReferences": [{"kind": "ReplicaSet", "controller": True}]},
+                     "spec": {"volumes": [{"emptyDir": {}}]}})
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertIn("shop/zz-cache", finding.summary)
+        self.assertNotIn("fluent-bit", finding.summary)
+        self.assertNotIn("etcd-n1", finding.summary)
+        self.assertNotIn("more", finding.summary)
+
+    def test_emptydir_warning_keeps_noncontroller_daemonset_references(self):
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], [{"metadata": {"name": "cache",
+            "ownerReferences": [{"kind": "DaemonSet", "controller": False}]},
+            "spec": {"volumes": [{"emptyDir": {}}]}}]]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertTrue(any(f.check == "emptydir-data-loss" for f in report.findings))
+
+    def test_null_volumes_do_not_warn_or_fail(self):
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], [{"metadata": {"name": "no-volumes"}, "spec": {"volumes": None}}]]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+        self.assertEqual(report.failures, [])
+
     def test_unreadable_pods_do_not_claim_emptydir_coverage(self):
         report = ks.Report()
         cluster = ks.Cluster(None, report)
