@@ -159,6 +159,44 @@ class ClusterTest(unittest.TestCase):
         self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
         self.assertEqual(report.failures, [])
 
+    def test_emptydir_warning_excludes_finished_pods_before_truncation(self):
+        pods = [{"metadata": {"namespace": "a", "name": f"job-{i}",
+                             "ownerReferences": [{"kind": "Job", "controller": True}]},
+                 "status": {"phase": phase}, "spec": {"volumes": [{"emptyDir": {}}]}}
+                for phase in ("Succeeded", "Failed") for i in range(15)]
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+        pods.append({"metadata": {"namespace": "shop", "name": "zz-cache",
+                                  "deletionTimestamp": "2026-11-01T00:00:00Z",
+                                  "ownerReferences": [{"kind": "ReplicaSet", "controller": True}]},
+                     "status": {"phase": "Running"}, "spec": {"volumes": [{"emptyDir": {}}]}})
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertIn("shop/zz-cache", finding.summary)
+        self.assertNotIn("a/job-", finding.summary)
+        self.assertNotIn("more", finding.summary)
+
+    def test_null_pod_fields_do_not_abort_workload_checks(self):
+        for owned in (False, True):
+            for spec in (None, {"volumes": [None]}, {"volumes": [None, {"emptyDir": {}}]}):
+                with self.subTest(owned=owned, spec=spec):
+                    metadata = {"name": "cache", "annotations": None}
+                    if owned:
+                        metadata["ownerReferences"] = [{"kind": "ReplicaSet", "controller": True}]
+                    cluster = mock.Mock()
+                    cluster.items.side_effect = [[], [{"metadata": metadata, "spec": spec, "status": None}]]
+                    report = ks.Report()
+                    ks.check_workloads(cluster, report)
+                    checks = {f.check for f in report.findings}
+                    self.assertEqual("emptydir-data-loss" in checks, spec == {"volumes": [None, {"emptyDir": {}}]})
+                    self.assertEqual("unowned-pod" in checks, not owned)
+                    self.assertEqual(report.failures, [])
+
     def test_unreadable_pods_do_not_claim_emptydir_coverage(self):
         report = ks.Report()
         cluster = ks.Cluster(None, report)
