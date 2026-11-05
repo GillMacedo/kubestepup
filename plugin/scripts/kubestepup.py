@@ -360,9 +360,10 @@ def check_workloads(cluster, report):
         report.coverage.append(f"{len(pods)} pods, their owners and emptyDir volumes.")
         local_data = [
             ref(item) for item in pods
-            if (item.get("status") or {}).get("phase") not in ("Succeeded", "Failed")
+            if (item.get("spec") or {}).get("nodeName")
+            and (item.get("status") or {}).get("phase") not in ("Succeeded", "Failed")
             and "kubernetes.io/config.mirror" not in (item["metadata"].get("annotations") or {})
-            and not any(owner.get("kind") == "DaemonSet" and owner.get("controller")
+            and not any((owner or {}).get("kind") == "DaemonSet" and (owner or {}).get("controller")
                         for owner in item["metadata"].get("ownerReferences") or [])
             and any("emptyDir" in (volume or {}) for volume in (item.get("spec") or {}).get("volumes") or [])
         ]
