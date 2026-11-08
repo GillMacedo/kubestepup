@@ -7,4 +7,3 @@
 
 ## Later
 - EKS, GKE and AKS support windows
-- Sum up pods with `emptyDir` volumes that a drain would lose

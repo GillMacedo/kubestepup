@@ -357,8 +357,19 @@ def check_workloads(cluster, report):
             report.findings.append(Finding("WARNING", "single-replica", f"Deployments with one replica have downtime when their node drains: {named(single)}."))
     pods = cluster.items("pods")
     if pods is not None:
-        report.coverage.append(f"{len(pods)} pods and their owners.")
-        unowned = [ref(item) for item in pods if not item["metadata"].get("ownerReferences") and "kubernetes.io/config.mirror" not in item["metadata"].get("annotations", {})]
+        report.coverage.append(f"{len(pods)} pods, their owners and emptyDir volumes.")
+        local_data = [
+            ref(item) for item in pods
+            if (item.get("spec") or {}).get("nodeName")
+            and (item.get("status") or {}).get("phase") not in ("Succeeded", "Failed")
+            and "kubernetes.io/config.mirror" not in (item["metadata"].get("annotations") or {})
+            and not any((owner or {}).get("kind") == "DaemonSet" and (owner or {}).get("controller")
+                        for owner in item["metadata"].get("ownerReferences") or [])
+            and any("emptyDir" in (volume or {}) for volume in (item.get("spec") or {}).get("volumes") or [])
+        ]
+        if local_data:
+            report.findings.append(Finding("WARNING", "emptydir-data-loss", f"Pods using emptyDir: {named(local_data)}. Their data is lost when the pod is removed. Review that data before allowing drain to delete it with --delete-emptydir-data."))
+        unowned = [ref(item) for item in pods if not item["metadata"].get("ownerReferences") and "kubernetes.io/config.mirror" not in (item["metadata"].get("annotations") or {})]
         if unowned:
             report.findings.append(Finding("WARNING", "unowned-pod", f"Pods with no controller. `kubectl drain` refuses them without --force, and they won't come back: {named(unowned)}."))
 

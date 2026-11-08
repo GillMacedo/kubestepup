@@ -94,6 +94,134 @@ class ClusterTest(unittest.TestCase):
         self.assertNotIn("search", summary)
         self.assertNotIn("unused", summary)
 
+    def test_emptydir_warning_includes_disk_and_memory_but_not_persistent_volumes(self):
+        pods = [
+            {"metadata": {"namespace": "shop", "name": "disk"}, "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}},
+            {"metadata": {"namespace": "shop", "name": "memory"}, "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {"medium": "Memory"}}]}},
+            {"metadata": {"namespace": "shop", "name": "persistent"}, "spec": {"nodeName": "worker-1", "volumes": [{"persistentVolumeClaim": {"claimName": "data"}}]}},
+            {"metadata": {"namespace": "shop", "name": "no-volume"}},
+        ]
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertEqual(finding.severity, "WARNING")
+        self.assertIn("shop/disk", finding.summary)
+        self.assertIn("shop/memory", finding.summary)
+        self.assertNotIn("shop/persistent", finding.summary)
+        self.assertNotIn("shop/no-volume", finding.summary)
+        self.assertIn("--delete-emptydir-data", finding.summary)
+        self.assertIn("lost", finding.summary)
+
+    def test_emptydir_warning_excludes_pods_drain_does_not_delete(self):
+        pods = [
+            {"metadata": {"namespace": "logging", "name": f"fluent-bit-{i}",
+                          "ownerReferences": [{"kind": "DaemonSet", "controller": True}]},
+             "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}}
+            for i in range(20)
+        ]
+        pods.append({"metadata": {"namespace": "kube-system", "name": "etcd-n1",
+                                  "annotations": {"kubernetes.io/config.mirror": "hash"}},
+                     "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}})
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+
+        pods.append({"metadata": {"namespace": "shop", "name": "zz-cache",
+                                  "ownerReferences": [{"kind": "ReplicaSet", "controller": True}]},
+                     "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}})
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertIn("shop/zz-cache", finding.summary)
+        self.assertNotIn("fluent-bit", finding.summary)
+        self.assertNotIn("etcd-n1", finding.summary)
+        self.assertNotIn("more", finding.summary)
+
+    def test_emptydir_warning_keeps_noncontroller_daemonset_references(self):
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], [{"metadata": {"name": "cache",
+            "ownerReferences": [{"kind": "DaemonSet", "controller": False}]},
+            "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}}]]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertTrue(any(f.check == "emptydir-data-loss" for f in report.findings))
+
+    def test_null_volumes_do_not_warn_or_fail(self):
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], [{"metadata": {"name": "no-volumes"}, "spec": {"nodeName": "worker-1", "volumes": None}}]]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+        self.assertEqual(report.failures, [])
+
+    def test_emptydir_warning_excludes_finished_pods_before_truncation(self):
+        pods = [{"metadata": {"namespace": "a", "name": f"job-{i}",
+                             "ownerReferences": [{"kind": "Job", "controller": True}]},
+                 "status": {"phase": phase}, "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}}
+                for phase in ("Succeeded", "Failed") for i in range(15)]
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        self.assertFalse(any(f.check == "emptydir-data-loss" for f in report.findings))
+        pods.append({"metadata": {"namespace": "shop", "name": "zz-cache",
+                                  "deletionTimestamp": "2026-11-01T00:00:00Z",
+                                  "ownerReferences": [{"kind": "ReplicaSet", "controller": True}]},
+                     "status": {"phase": "Running"}, "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}})
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertIn("shop/zz-cache", finding.summary)
+        self.assertNotIn("a/job-", finding.summary)
+        self.assertNotIn("more", finding.summary)
+
+    def test_null_pod_fields_do_not_abort_workload_checks(self):
+        for owned in (False, True, "null-entry"):
+            for spec in (None, {"nodeName": "worker-1", "volumes": [None]}, {"nodeName": "worker-1", "volumes": [None, {"emptyDir": {}}]}):
+                with self.subTest(owned=owned, spec=spec):
+                    metadata = {"name": "cache", "annotations": None}
+                    if owned:
+                        metadata["ownerReferences"] = [None] if owned == "null-entry" else [{"kind": "ReplicaSet", "controller": True}]
+                    cluster = mock.Mock()
+                    cluster.items.side_effect = [[], [{"metadata": metadata, "spec": spec, "status": None}]]
+                    report = ks.Report()
+                    ks.check_workloads(cluster, report)
+                    checks = {f.check for f in report.findings}
+                    self.assertEqual("emptydir-data-loss" in checks, spec == {"nodeName": "worker-1", "volumes": [None, {"emptyDir": {}}]})
+                    self.assertEqual("unowned-pod" in checks, not owned)
+                    self.assertEqual(report.failures, [])
+
+    def test_emptydir_warning_excludes_unscheduled_pods_before_truncation(self):
+        pods = [{"metadata": {"namespace": "shop", "name": f"unscheduled-{i}"},
+                 "status": {"phase": "Pending"}, "spec": {"volumes": [{"emptyDir": {}}]}}
+                for i in range(15)]
+        pods.append({"metadata": {"namespace": "shop", "name": "scheduled"},
+                     "status": {"phase": "Pending"},
+                     "spec": {"nodeName": "worker-1", "volumes": [{"emptyDir": {}}]}})
+        cluster = mock.Mock()
+        cluster.items.side_effect = [[], pods]
+        report = ks.Report()
+        ks.check_workloads(cluster, report)
+        finding = next(f for f in report.findings if f.check == "emptydir-data-loss")
+        self.assertIn("shop/scheduled", finding.summary)
+        self.assertNotIn("unscheduled", finding.summary)
+        self.assertNotIn("more", finding.summary)
+
+    def test_unreadable_pods_do_not_claim_emptydir_coverage(self):
+        report = ks.Report()
+        cluster = ks.Cluster(None, report)
+        with mock.patch.object(cluster, "json", side_effect=[{"items": []}, ks.ReadError("forbidden")]):
+            ks.check_workloads(cluster, report)
+        self.assertEqual(report.failures, ["pods: forbidden"])
+        self.assertEqual(report.coverage, [])
+        self.assertEqual(report.findings, [])
+
     def test_webhook_fail_closed_without_ready_backend(self):
         _, report = report_for("--kube", "--to", "1.32")
         summary = checks(report)["webhook-no-backend"]["summary"]
